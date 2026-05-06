@@ -7,3 +7,4 @@
 3. Se o telemóvel avisar sobre "Fontes Desconhecidas", vai às Definições e autoriza a instalação para poderes jogar.
 ​Instalação no Windows: Basta extrair a pasta e clicar no ficheiro .exe para começar a vigiar 
 <img width="1024" height="1024" alt="70700" src="https://github.com/user-attachments/assets/30ce75af-cf4e-4f66-9e3a-82db4d780deb" />
+https://fatimaluciana1984-coder.github.io/Fnaf/
