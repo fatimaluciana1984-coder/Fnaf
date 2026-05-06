@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sombra Mecânica: O Turno de Nicollas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #000; color: #fff;
+            font-family: 'Courier New', Courier, monospace; overflow: hidden;
+            user-select: none; touch-action: none;
+        }
+
+        /* TELA DE AVISO PARA GIRAR O CELULAR */
+        #rotate-warning {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 99999;
+            display: none; /* Escondido por padrão */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+        }
+
+        /* Só mostra o aviso se a tela estiver em modo Retrato (em pé) */
+        @media (orientation: portrait) {
+            #rotate-warning {
+                display: flex;
+            }
+        }
+
+        .phone-animation {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: rotate-device 2s infinite ease-in-out;
+        }
+
+        @keyframes rotate-device {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        /* Efeito de Scanlines (Linhas de TV) */
+        body::before {
+            content: " ";
+            position: fixed; inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            z-index: 10000; pointer-events: none;
+        }
+
+        /* Menu Principal */
+        #menu-screen {
+            position: fixed; inset: 0; z-index: 20000;
+            background: #000 url('https://images.unsplash.com/photo-1533613220915-609f661a6fe1?q=80&w=1000&auto=format&fit=crop') center/cover;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .menu-overlay { position: absolute; inset: 0; background: radial-gradient(circle, transparent 20%, black 90%); }
+        .menu-content { position: relative; z-index: 1; text-align: center; }
+
+        /* Escritório */
+        #viewport { width: 100vw; height: 100vh; overflow-x: auto; overflow-y: hidden; }
+        #office {
+            width: 220vw; height: 100vh; position: relative;
+            background: #111 url('https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=1500&auto=format&fit=crop') center/cover;
+        }
+
+        /* Portas e Corredores */
+        .door-area { position: absolute; bottom: 0; width: 40vw; height: 90vh; background: #000; border: 15px solid #222; overflow: hidden;}
+        .left-side { left: 5vw; }
+        .right-side { right: 5vw; }
+        
+        .corridor-view {
+            position: absolute; inset: 0; opacity: 0; transition: opacity 0.05s;
+            background-size: cover; background-position: center;
+        }
+        .left-side .corridor-view { background-image: url('https://images.unsplash.com/photo-1505673542670-a5e3ff5b14a3?q=80&w=800&auto=format&fit=crop'); }
+        .right-side .corridor-view { background-image: url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?q=80&w=800&auto=format&fit=crop'); }
+        
+        .door-slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #222; z-index: 10; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background-image: repeating-linear-gradient(#1a1a1a 0%, #1a1a1a 10%, #222 10%, #222 20%);
+            border-bottom: 30px solid #000;
+        }
+        .door-slide.open { transform: translateY(-100%); }
+
+        /* Botões */
+        .btn-panel { position: absolute; bottom: 25%; display: flex; flex-direction: column; gap: 20px; z-index: 20; }
+        .panel-l { left: 47vw; }
+        .panel-r { right: 47vw; }
+        .btn-game {
+            width: 75px; height: 75px; border: 5px solid #444; border-radius: 15px;
+            font-size: 35px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; background: linear-gradient(#444, #222); box-shadow: 0 5px 0 #000;
+        }
+        .btn-door-cmd.active { background: linear-gradient(#f33, #900); border-color: #500; box-shadow: 0 0 25px #f00; }
+        .btn-light-cmd.active { background: linear-gradient(#ff0, #aa0); border-color: #660; box-shadow: 0 0 25px #ff0; }
+
+        /* Monitor */
+        #monitor {
+            position: fixed; inset: 0; background: #000; z-index: 5000;
+            display: none; flex-direction: column;
+        }
+        .cam-display {
+            flex: 1; background-size: cover; background-position: center;
+            position: relative; border: 12px solid #333;
+        }
+        .static-grain { position: absolute; inset: 0; opacity: 0.2; pointer-events: none; background: url('https://media.giphy.com/media/oEI9uWUqnW3Ze/giphy.gif'); }
+        
+        .cam-map {
+            position: absolute; bottom: 40px; right: 40px; width: 280px;
+            background: rgba(0,0,0,0.9); border: 2px solid #0f0; padding: 20px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .cam-node { background: #111; color: #0f0; font-size: 12px; border: 1px solid #0f0; text-align: center; padding: 10px; cursor: pointer; }
+        .cam-node.active { background: #0f0; color: #000; font-weight: bold; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .close-monitor-btn {
+            position: absolute; top: 20px; right: 20px; width: 70px; height: 70px;
+            background: rgba(255,0,0,0.4); border: 3px solid #f00; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center; font-size: 40px;
+            cursor: pointer; z-index: 5100;
+        }
+
+        /* HUD */
+        .hud-top { position: fixed; top: 20px; left: 20px; z-index: 500; background: rgba(0,0,0,0.85); padding: 15px; border-left: 8px solid #f00; }
+
+        /* Jumpscare */
+        #scare-screen {
+            position: fixed; inset: 0; background: #000; z-index: 30000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .scare-anim { font-size: 300px; animation: shake-crazy 0.05s infinite; }
+        @keyframes shake-crazy { 
+            0% { transform: scale(1.2) translate(15px, 15px) rotate(5deg); } 
+            50% { transform: scale(1.5) translate(-15px, -15px) rotate(-5deg); } 
+            100% { transform: scale(1.2) translate(15px, -15px) rotate(0deg); } 
+        }
+
+        .open-monitor-btn {
+            position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 45%; height: 60px; background: rgba(255,255,255,0.1);
+            border: 3px solid #fff; border-bottom: none; z-index: 1500; cursor: pointer;
+            text-align: center; line-height: 60px; font-weight: 900; border-radius: 25px 25px 0 0;
+            color: #fff; text-transform: uppercase; letter-spacing: 5px; transition: 0.3s;
+        }
+        .open-monitor-btn:hover { background: rgba(255,255,255,0.3); height: 70px; }
+
+        #win-screen {
+            position: fixed; inset: 0; background: #000; z-index: 25000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Aviso de Rotação -->
+<div id="rotate-warning">
+    <div class="phone-animation">📱</div>
+    <h2 class="text-4xl font-black italic">GIRAR TELA</h2>
+    <p class="text-red-600 mt-4 font-bold text-xl uppercase tracking-widest">Por favor, vire o telemóvel para jogar</p>
+</div>
+
+<div id="menu-screen">
+    <div class="menu-overlay"></div>
+    <div class="menu-content">
+        <h1 class="text-7xl font-black mb-2 italic tracking-tighter shadow-red-500">SOMBRA MECÂNICA</h1>
+        <p class="text-red-600 mb-12 font-bold tracking-[0.5em] text-xl uppercase">O Turno de Nicollas</p>
+        <button onclick="startGame()" class="px-20 py-8 border-4 border-white text-4xl font-black hover:bg-white hover:text-black transition-all shadow-[0_0_50px_rgba(255,255,255,0.4)] uppercase">Vigiar</button>
+    </div>
+</div>
+
+<div class="hud-top">
+    <div id="power-lbl" class="font-bold text-xl">BATERIA: 100%</div>
+    <div class="text-5xl font-black text-red-600" id="clock-lbl">12 AM</div>
+</div>
+
+<div id="viewport">
+    <div id="office">
+        <!-- Esquerda -->
+        <div class="door-area left-side">
+            <div id="view-l" class="corridor-view"></div>
+            <div id="door-l" class="door-slide"></div>
+            <div id="enemy-l" style="display:none; position:absolute; bottom:5%; left:5%; font-size:200px; z-index:5;">🐰</div>
+        </div>
+        <div class="btn-panel panel-l">
+            <button class="btn-game btn-door-cmd" id="bd-l" onclick="useDoor('l')">🚪</button>
+            <button class="btn-game btn-light-cmd" id="bl-l" onmousedown="useLight('l',true)" onmouseup="useLight('l',false)" ontouchstart="useLight('l',true)" ontouchend="useLight('l',false)">🔦</button>
+        </div>
+
+        <!-- Direita -->
+        <div class="door-area right-side">
+            <div id="view-r" class="corridor-view"></div>
+            <div id="door-r" class="door-slide"></div>
+            <div id="enemy-r" style="display:none; position:absolute; bottom:5%; right:5%; font-size:200px; z-index:5;">🐥</div>
+        </div>
+        <div class="btn-panel panel-r">
+            <button class="btn-game btn-door-cmd" id="bd-r" onclick="useDoor('r')">🚪</button>
+            <button class="btn-game btn-light-cmd" id="bl-r" onmousedown="useLight('r',true)" onmouseup="useLight('r',false)" ontouchstart="useLight('r',true)" ontouchend="useLight('r',false)">🔦</button>
+        </div>
+    </div>
+</div>
+
+<div class="open-monitor-btn" onclick="toggleMonitor(true)">ABRIR MONITOR</div>
+
+<div id="monitor">
+    <div class="close-monitor-btn" onclick="toggleMonitor(false)">❌</div>
+    
+    <div id="cam-bg" class="cam-display">
+        <div class="static-grain"></div>
+        <div id="cam-label" class="absolute top-8 left-8 bg-black/90 p-4 border-l-8 border-green-500 text-green-500 font-bold uppercase text-xl">CAM 01: PALCO</div>
+        <div id="cam-monster" class="absolute inset-0 flex items-center justify-center text-[180px]">🐻🐰🐥</div>
+    </div>
+    
+    <div class="cam-map">
+        <div id="node-1" class="cam-node active" onclick="setCam(1)">CAM 1: PALCO</div>
+        <div id="node-2" class="cam-node" onclick="setCam(2)">CAM 2: JOGOS</div>
+        <div id="node-3" class="cam-node" onclick="setCam(3)">CAM 3: COZINHA</div>
+        <div id="node-4" class="cam-node" onclick="setCam(4)">CAM 4: CORREDOR</div>
+    </div>
+</div>
+
+<div id="scare-screen">
+    <div id="monster-face" class="scare-anim">🐻</div>
+    <h2 class="text-6xl text-red-800 font-black mt-12 drop-shadow-lg">MORREU!</h2>
+    <button onclick="location.reload()" class="mt-12 px-12 py-6 border-4 border-white text-2xl font-black uppercase">Tentar de Novo</button>
+</div>
+
+<div id="win-screen">
+    <h1 class="text-[250px] font-black text-white animate-bounce">6 AM</h1>
+    <h2 class="text-5xl text-yellow-400 font-black">SOBREVIVENTE!</h2>
+    <button onclick="location.reload()" class="mt-16 px-16 py-8 bg-white text-black font-black text-3xl rounded-xl">MENU</button>
+</div>
+
+<script>
+    let pwr = 100;
+    let hr = 0;
+    let isPlaying = false;
+    let isMonitorOpen = false;
+    let doorOn = { l: false, r: false };
+    let enemyLvl = { bonnie: 0, chica: 0, foxy: 0 };
+    let audio;
+    let startT;
+    
+    const camData = {
+        1: { name: "PALCO PRINCIPAL", img: "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?q=80&w=1000" },
+        2: { name: "SALA DE JOGOS", img: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000" },
+        3: { name: "COZINHA", img: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1000" },
+        4: { name: "CORREDOR ESCURO", img: "https://images.unsplash.com/photo-1513506486633-80f08960252b?q=80&w=1000" }
+    };
+
+    function playSound(freq, dur, type='sawtooth', vol=0.2) {
+        if(!audio) return;
+        const o = audio.createOscillator();
+        const g = audio.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, audio.currentTime);
+        if(freq > 500) o.frequency.exponentialRampToValueAtTime(40, audio.currentTime + dur);
+        g.gain.setValueAtTime(vol, audio.currentTime);
+        g.gain.linearRampToValueAtTime(0, audio.currentTime + dur);
+        o.connect(g);
+        g.connect(audio.destination);
+        o.start();
+        o.stop(audio.currentTime + dur);
+    }
+
+    function startGame() {
+        audio = new (window.AudioContext || window.webkitAudioContext)();
+        document.getElementById('menu-screen').style.display = 'none';
+        isPlaying = true;
+        startT = Date.now();
+        
+        setInterval(() => { if(isPlaying) playSound(50, 0.3, 'triangle', 0.02); }, 400);
+        
+        const vp = document.getElementById('viewport');
+        vp.scrollLeft = vp.scrollWidth / 4;
+        
+        mainLoop();
+    }
+
+    function mainLoop() {
+        if(!isPlaying) return;
+        
+        let cost = 0.06;
+        if(doorOn.l) cost += 0.18;
+        if(doorOn.r) cost += 0.18;
+        if(isMonitorOpen) cost += 0.3;
+        
+        pwr -= cost;
+        document.getElementById('power-lbl').innerText = "BATERIA: " + Math.max(0, Math.floor(pwr)) + "%";
+        
+        if(pwr <= 0) gameOver("🌑", "Escuridão total...");
+
+        if(Math.random() > 0.85) {
+            enemyLvl.bonnie++;
+            if(enemyLvl.bonnie > 4) {
+                if(!doorOn.l) gameOver("🐰", "Bonnie entrou!");
+                else { enemyLvl.bonnie = 0; playSound(60, 0.4, 'square', 0.3); }
+            }
+        }
+
+        if(Math.random() > 0.88) {
+            enemyLvl.chica++;
+            if(enemyLvl.chica > 4) {
+                if(!doorOn.r) gameOver("🐥", "Chica entrou!");
+                else { enemyLvl.chica = 0; playSound(60, 0.4, 'square', 0.3); }
+            }
+        }
+
+        setTimeout(mainLoop, 2000);
+    }
+
+    setInterval(() => {
+        if(!isPlaying) return;
+        hr++;
+        document.getElementById('clock-lbl').innerText = hr + " AM";
+        if(hr >= 6) win();
+    }, 40000);
+
+    function useDoor(s) {
+        if(pwr <= 0 || !isPlaying) return;
+        doorOn[s] = !doorOn[s];
+        document.getElementById('door-'+s).classList.toggle('open', !doorOn[s]);
+        document.getElementById('bd-'+s).classList.toggle('active', doorOn[s]);
+        playSound(150, 0.15, 'sine', 0.2);
+    }
+
+    function useLight(s, state) {
+        if(pwr <= 0 || !isPlaying) return;
+        document.getElementById('bl-'+s).classList.toggle('active', state);
+        const view = document.getElementById('view-'+s);
+        const monster = document.getElementById('enemy-'+s);
+        const lvl = (s === 'l') ? enemyLvl.bonnie : enemyLvl.chica;
+
+        if(state) {
+            view.style.opacity = 1;
+            playSound(700, 0.05, 'sine', 0.06);
+            if(lvl >= 3) {
+                monster.style.display = 'block';
+                playSound(100, 0.2, 'sawtooth', 0.1);
+            }
+        } else {
+            view.style.opacity = 0;
+            monster.style.display = 'none';
+        }
+    }
+
+    function toggleMonitor(show) {
+        if(pwr <= 0 || !isPlaying) return;
+        isMonitorOpen = show;
+        document.getElementById('monitor').style.display = show ? 'flex' : 'none';
+        playSound(show ? 450 : 250, 0.15, 'sine', 0.15);
+        if(show) setCam(1);
+    }
+
+    function setCam(id) {
+        const data = camData[id];
+        document.getElementById('cam-bg').style.backgroundImage = `url(${data.img})`;
+        document.getElementById('cam-label').innerText = "CAM 0" + id + ": " + data.name;
+        
+        document.querySelectorAll('.cam-node').forEach(n => n.classList.remove('active'));
+        document.getElementById('node-'+id).classList.add('active');
+
+        let m = "";
+        if(id === 1) {
+            if(enemyLvl.bonnie === 0) m += "🐰";
+            if(enemyLvl.chica === 0) m += "🐥";
+            m += "🐻";
+        } else if(id === 2 && enemyLvl.bonnie === 1) m = "🐰";
+        else if(id === 3 && enemyLvl.chica === 1) m = "🐥";
+        else m = "VAZIO";
+        
+        document.getElementById('cam-monster').innerText = m;
+        playSound(300, 0.05, 'square', 0.05);
+    }
+
+    function gameOver(icon, msg) {
+        if(!isPlaying) return;
+        isPlaying = false;
+        playSound(1200, 1.5, 'sawtooth', 0.8);
+        document.getElementById('monster-face').innerText = icon;
+        document.getElementById('scare-screen').style.display = 'flex';
+    }
+
+    function win() {
+        isPlaying = false;
+        document.getElementById('win-screen').style.display = 'flex';
+        playSound(880, 0.5, 'sine', 0.3);
+    }
+</script>
+</body>
+</html>
